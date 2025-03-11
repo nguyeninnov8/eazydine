@@ -7,13 +7,16 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 @Service
 public class JwtService {
     @Value("${jwt.secret-key}")
-    private String secretkey;
+    private String secretKey;
 
     @Value("${jwt.expiration}")
     private long expiration;
@@ -29,23 +32,52 @@ public class JwtService {
         return extractClaim(token, claims -> claims.get("userId", String.class));
     }
 
+    public String generateToken(String username, Long userId) {
+        return generateToken(username, userId, new HashMap<>());
+    }
+
+    public String generateToken(String username, Long userId, HashMap<String, Object> claims) {
+        return buildToken(username, userId, claims, expiration);
+    }
+
+    private String buildToken(String username, Long userId, HashMap<String, Object> claims, long expiration) {
+        claims.put("userId", userId);
+        return Jwts.builder()
+                .claims(claims)
+                .subject(username)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts
-                .parser()
-                .setSigningKey(getSigningKey())
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
-    private Key getSigningKey() {
-        byte[] signingKey = Decoders.BASE64.decode(
-                secretkey);
-        return Keys.hmacShaKeyFor(signingKey);
+    private SecretKey getSigningKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    public Map<String, Boolean> isTokenValid(String accessToken) {
+        return Map.of("valid", !isTokenExpired(accessToken));
+    }
+
+    private boolean isTokenExpired(String accessToken) {
+        return extractExpiration(accessToken).before(new Date());
+    }
+
+    private Date extractExpiration(String accessToken) {
+        return extractClaim(accessToken, Claims::getExpiration);
     }
 }

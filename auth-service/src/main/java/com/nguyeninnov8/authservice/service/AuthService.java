@@ -106,9 +106,7 @@ public class AuthService {
         event.setEmail(user.getEmail());
         event.setRoles(user.getRoles());
         event.setEventTimestamp(LocalDateTime.now());
-
         kafkaTemplate.send("user-events", event.getEventId(), event);
-
         log.info("User event published: {}", event);
 
     }

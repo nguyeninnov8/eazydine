@@ -2,7 +2,6 @@ package com.nguyeninnov8.authservice.controller;
 
 import com.nguyeninnov8.authservice.dto.*;
 import com.nguyeninnov8.authservice.service.AuthService;
-import com.nguyeninnov8.commonlib.dto.UserDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

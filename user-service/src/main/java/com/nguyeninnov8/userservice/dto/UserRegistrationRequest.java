@@ -20,4 +20,6 @@ public class UserRegistrationRequest {
     private String lastName;
 
     private String phoneNumber;
+
+
 }
